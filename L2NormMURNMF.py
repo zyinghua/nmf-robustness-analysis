@@ -7,8 +7,14 @@ from time import time
 
 
 class L2NormMURNMF:
-    def __init__(self):
+    def __init__(self, V=None, rank=None):
         self.np_rand = np.random.RandomState(0)
+        self.V = V
+        self.rank = rank
+        self.W, self.H = None, None
+
+        if self.V is not None and self.rank is not None:
+            self.W, self.H = self.init_factors(self.V, self.rank)
 
     def init_factors(self, V, rank):
         """
