@@ -2,6 +2,10 @@
 # Date: 2023/09/12
 
 import numpy as np
+from collections import Counter
+from sklearn.cluster import KMeans
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import normalized_mutual_info_score
 import matplotlib.pyplot as plt
 from time import time
 
@@ -63,3 +67,60 @@ class L2NormMURNMF:
             H = Hu
 
         return W, H
+
+    def calc_rmse(self):
+        """
+        Calculate the Rooted Mean Squared Error (RMSE) between the original data matrix and the reconstructed data matrix.
+        :return: RMSE
+        """
+        assert self.V is not None and self.W is not None and self.H is not None, "Please initialize the model first."
+
+        return np.linalg.norm(self.V - self.W @ self.H, ord='fro')  # Apply Frobenius norm
+
+    def calc_aa_nmi(self, Y):
+        """
+        Calculate the Average Accuracy (AA) and Normalized Mutual Information (NMI) between the original labels and
+        the predicted labels based on the transformed data matrix via KMeans clustering. As a mean to measure the
+        goodness of the transformed data matrix.
+
+        :param Y: Original labels.
+        :return: AA, NMI
+
+        Acknowledgement: This function is inspired by and has components from the corresponding function
+        in the week 6 tutorial ipynb file of COMP4328/5328 Advanced Machine Learning course at University of Sydney.
+        """
+        def assign_cluster_label(X, Y_):
+            kmeans = KMeans(n_clusters=len(set(Y_))).fit(X)
+            Y_pred_ = np.zeros(Y_.shape)
+            for i in set(kmeans.labels_):
+                """for each centroid, label its instances by majority"""
+                ind = kmeans.labels_ == i  # get the index of instances which labeled as i
+                Y_pred[ind] = Counter(Y_[ind]).most_common(1)[0][0]  # assign label.
+            return Y_pred_
+
+        assert self.H is not None, "Please initialize the model first."
+
+        Y_pred = assign_cluster_label(self.H.T, Y)
+        aa = accuracy_score(Y, Y_pred)
+        nmi = normalized_mutual_info_score(Y, Y_pred)
+
+        return aa, nmi
+
+    def evaluate(self, Y=None):
+        """
+        Evaluate the performance of the model by calculating the following metrics:
+        1. Rooted Mean Squared Error (RMSE)
+        2. Average Accuracy
+        3. Normalized Mutual Information (NMI)
+
+        :return: RMSE, AA, NMI
+        """
+        assert self.V is not None and self.W is not None and self.H is not None, "Please initialize the model first."
+
+        rmse = self.calc_rmse()
+
+        if Y is not None:
+            aa, nmi = self.calc_aa_nmi(Y)
+            return rmse, aa, nmi
+        else:
+            return rmse
