@@ -38,6 +38,16 @@ class L2NormMURNMF:
 
         return W, H
 
+    def reconstruct(self, W, H):
+        """
+        Reconstruct the data matrix from the dictionary matrix and transformed data matrix.
+
+        :param W: Dictionary matrix.
+        :param H: Transformed data matrix.
+        :return: V
+        """
+        return W @ H
+
     def fit(self, V, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=5):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
