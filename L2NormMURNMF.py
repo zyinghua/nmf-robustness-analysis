@@ -1,5 +1,5 @@
 # Author: Yinghua Zhou
-# Date: 2023/09/12
+# Creation Date: 2023/09/12
 
 import numpy as np
 from collections import Counter
@@ -63,6 +63,8 @@ class L2NormMURNMF:
 
         rmse, aa, nmi = [], [], []
 
+        start = time()
+
         for s in range(steps):
             Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T) + e
             Hu = self.H * (self.W.T @ self.V) / (self.W.T @ self.W @ self.H) + e
@@ -95,6 +97,9 @@ class L2NormMURNMF:
 
             plt.legend()
             plt.show()
+
+        if verbose:
+            print('Training Time taken: {:.2f} seconds.'.format(time()-start))
 
         return self.W, self.H
 
