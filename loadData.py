@@ -51,3 +51,29 @@ def load_data(root, reduce=4):
     labels = np.array(labels)
 
     return images, labels
+
+
+if __name__ == '__main__':
+    X_hat, Y_hat = load_data('../data/ORL', reduce=3)
+    print('X_hat.shape={}, Y_hat.shape={}'.format(X_hat.shape, Y_hat.shape))
+
+    # Add Noise.
+    X_noise = np.random.rand(*X_hat.shape) * 40
+    X = X_hat + X_noise
+
+    import matplotlib.pyplot as plt
+
+    img_size = [i // 3 for i in (92, 112)]  # ORL  30 x 37
+    ind = 2  # index of demo image.
+    plt.figure(figsize=(10, 3))
+    plt.subplot(131)
+    plt.imshow(X_hat[:, ind].reshape(img_size[1], img_size[0]),
+               cmap=plt.cm.gray)  # reshape converts a 1D vector to an image matrix shape
+    plt.title('Image(Original)')
+    plt.subplot(132)
+    plt.imshow(X_noise[:, ind].reshape(img_size[1], img_size[0]), cmap=plt.cm.gray)
+    plt.title('Noise')
+    plt.subplot(133)
+    plt.imshow(X[:, ind].reshape(img_size[1], img_size[0]), cmap=plt.cm.gray)
+    plt.title('Image(Noise)')
+    plt.show()
