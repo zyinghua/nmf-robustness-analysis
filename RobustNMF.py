@@ -10,7 +10,7 @@ from time import time
 class RobustNMF:
     def __init__(self, rank, random_state=0):
         """
-        Initialize the L2-Norm Multiplicative Update Rule Non-Negative Matrix Factorization model.
+        Initialization of the Robust Non-negative Matrix Factorization via L1 Norm Regularization NMF model.
         Hyper-parameters are defined here.
 
         :param rank: Rank of the dictionary matrix. Latent dimension.
@@ -19,77 +19,79 @@ class RobustNMF:
         assert rank is not None and rank > 0, "Please provide a valid integer for the rank of the dictionary matrix."
 
         self.np_rand = np.random.RandomState(random_state)
-        self.rank = rank
-        self.V, self.W, self.E, self.H, self.Y = None, None, None, None, None
+        self.k = rank
 
-    def init_factors(self, V):
+        self.X_clean, self.X, self.U, self.V, self.E, self.Y = None, None, None, None, None, None
+        self.m, self.n = None, None
+
+    def init_factors(self, X):
         """
         Initialize the dictionary matrix and transformed data matrix *randomly*.
 
-        :param V: Original non-contaminated data matrix.
+        :param X: Original data matrix.
         :return: W, H
         """
 
-        W = self.np_rand.rand(V.shape[0], self.rank)
-        H = self.np_rand.rand(self.rank, V.shape[1])
-        E = self.np_rand.rand(V.shape[0], V.shape[1])
+        self.U = self.np_rand.rand(X.shape[0], self.k)
+        self.V = self.np_rand.rand(self.k, X.shape[1])
+        self.E = self.np_rand.rand(X.shape[0], X.shape[1])
 
-        return W, H, E
+        self.m, self.n = X.shape
 
-    def reconstruct(self, W, H, E):
+        return self.U, self.V, self.E
+
+    def reconstruct(self, U, V):
         """
-        Reconstruct the data matrix from the dictionary matrix and transformed data matrix.
+        Reconstruct the clean data matrix from the dictionary matrix and transformed data matrix.
 
-        :param W: Dictionary matrix.
-        :param H: Transformed data matrix.
-        :param E: Contamination matrix.
-        :return: V
+        :param U: Dictionary matrix.
+        :param V: Transformed data matrix.
+        :return: reconstructed data matrix
         """
-        return W @ H - E
+        return U @ V
 
-    def fit(self, V, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
+    def fit(self, X_clean, X, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
         """
+        Perform the model learning via the specific MURs stated in the paper.
 
-        :param V: Original non-contaminated data matrix.
+        :param X_clean: Original non-contaminated data matrix.
+        :param X: Original contaminated data matrix.
         :param Y: Original labels.
         :param steps: Number of iterations.
-        :param e: epsilon, added to the updates avoid numerical instability
-        :param d: delta, threshold for rate of change at each step
-        :param verbose: True to print out the convergence information
-        :param plot: True to plot the convergence curve on the three nominated metrics
-        :param plot_interval: Plot the convergence curve on the metrics every plot_interval step
+        :param e: epsilon, added to the updates avoid numerical instability.
+        :param d: delta, threshold for rate of change at each step.
+        :param verbose: True to print out the convergence information.
+        :param plot: True to plot the convergence curve on the three nominated metrics.
+        :param plot_interval: Plot the convergence curve on the metrics every plot_interval step.
         :return: W, H, E
-
-        Acknowledgement: This function is inspired by from the corresponding function in the week 6 tutorial ipynb
-         file of COMP4328/5328 Advanced Machine Learning course at University of Sydney.
         """
-        assert V is not None, "Please provide the original data matrix from the dataset."
+        assert X is not None, "Please provide the original data matrix from the dataset."
         assert Y is not None, "Please provide the original labels from the dataset."
 
-        self.W, self.H, self.E = self.init_factors(V)
-        self.V, self.Y = V, Y
+        self.init_factors(X)
+        self.X_clean, self.X, self.Y = X_clean, X, Y
 
         rmse, aa, nmi = [], [], []
 
         start = time()
 
         for s in range(steps):
-            Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T) + e
-            Hu = self.H * (self.W.T @ self.V) / (self.W.T @ self.W @ self.H) + e
 
-            d_W = np.sqrt(np.sum((Wu-self.W)**2, axis=(0, 1)))/self.W.size
-            d_H = np.sqrt(np.sum((Hu-self.H)**2, axis=(0, 1)))/self.H.size
+            d_U = np.sqrt(np.sum((Uu-self.U)**2, axis=(0, 1)))/self.U.size
+            d_V = np.sqrt(np.sum((Vu-self.V)**2, axis=(0, 1)))/self.V.size
+            d_E = np.sqrt(np.sum((Eu-self.E)**2, axis=(0, 1)))/self.E.size
 
-            if d_W < d and d_H < d:
+            if d_U < d and d_V < d and d_E < d:
                 if verbose:
                     print('Converged at step {}.'.format(s))
                 break
 
-            self.W = Wu
-            self.H = Hu
+            self.U = Uu
+            self.V = Vu
+            self.E = Eu
 
             if plot and s % plot_interval == 0:
-                rmse_, aa_, nmi_ = metrics.evaluate(self.V, self.W, self.H, self.Y)
+                rmse_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.U, self.V, self.Y)
                 rmse.append(rmse_)
                 aa.append(aa_)
                 nmi.append(nmi_)
@@ -109,5 +111,5 @@ class RobustNMF:
         if verbose:
             print('Training Time taken: {:.2f} seconds.'.format(time()-start))
 
-        return self.W, self.H, self.E
+        return self.U, self.V, self.E
 
