@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from PIL import Image
-from numpy import sqrt
 
 
 def load_data(root, reduce=4):
