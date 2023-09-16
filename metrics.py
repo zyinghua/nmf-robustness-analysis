@@ -28,12 +28,12 @@ def assign_cluster_label(X, Y):
     return Y_pred
 
 
-def calc_rmse(V, W, H):
+def calc_rmse(V_clean, W, H):
     """
     Calculate the Rooted Mean Squared Error (RMSE) between the original data matrix and the reconstructed data matrix.
     :return: RMSE
     """
-    return np.linalg.norm(V - W @ H, ord='fro')  # Apply Frobenius norm
+    return np.linalg.norm(V_clean - W @ H, ord='fro')  # Apply Frobenius norm
 
 
 def calc_aa(Y, Y_pred):
@@ -46,7 +46,7 @@ def calc_nmi(Y, Y_pred):
     return normalized_mutual_info_score(Y, Y_pred)
 
 
-def evaluate(V, W, H, Y):
+def evaluate(V_clean, W, H, Y):
     """
     Evaluate the performance of the model by calculating the following metrics:
     1. Rooted Mean Squared Error (RMSE)
@@ -55,12 +55,12 @@ def evaluate(V, W, H, Y):
 
     :return: RMSE, AA, NMI
     """
-    assert V is not None, "Please provide the original data matrix from the dataset."
+    assert V_clean is not None, "Please provide the original non-contaminated data matrix from the dataset."
     assert W is not None, "Please provide the dictionary matrix."
     assert H is not None, "Please provide the transformed data matrix."
     assert Y is not None, "Please provide the original labels from the dataset."
 
-    rmse = calc_rmse(V, W, H)
+    rmse = calc_rmse(V_clean, W, H)
 
     Y_pred = assign_cluster_label(H.T, Y)
     aa = calc_aa(Y, Y_pred)

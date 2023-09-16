@@ -20,13 +20,13 @@ class L2NormMURNMF:
 
         self.np_rand = np.random.RandomState(random_state)
         self.rank = rank
-        self.V, self.W, self.H, self.Y = None, None, None, None
+        self.V_clean, self.V, self.W, self.H, self.Y = None, None, None, None, None
 
     def init_factors(self, V):
         """
         Initialize the dictionary matrix and transformed data matrix *randomly*.
 
-        :param V: Original non-contaminated data matrix.
+        :param V: Original data matrix.
         :return: W, H
         """
 
@@ -45,11 +45,12 @@ class L2NormMURNMF:
         """
         return W @ H
 
-    def fit(self, V, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
+    def fit(self, V_clean, V, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
 
-        :param V: Original non-contaminated data matrix.
+        :param V_clean: Original non-contaminated data matrix.
+        :param V: Original data matrix. (Contains contamination)
         :param Y: Original labels.
         :param steps: Number of iterations.
         :param e: epsilon, added to the updates avoid numerical instability
@@ -62,11 +63,12 @@ class L2NormMURNMF:
         Acknowledgement: This function is inspired by and has components from the corresponding function
         in the week 6 tutorial ipynb file of COMP4328/5328 Advanced Machine Learning course at University of Sydney.
         """
+        assert V_clean is not None, "Please provide the original non-contaminated data matrix from the dataset."
         assert V is not None, "Please provide the original data matrix from the dataset."
         assert Y is not None, "Please provide the original labels from the dataset."
 
         self.W, self.H = self.init_factors(V)
-        self.V, self.Y = V, Y
+        self.V_clean, self.V, self.Y = V_clean, V, Y
 
         rmse, aa, nmi = [], [], []
 
@@ -88,7 +90,7 @@ class L2NormMURNMF:
             self.H = Hu
 
             if plot and s % plot_interval == 0:
-                rmse_, aa_, nmi_ = metrics.evaluate(self.V, self.W, self.H, self.Y)
+                rmse_, aa_, nmi_ = metrics.evaluate(self.V_clean, self.W, self.H, self.Y)
                 rmse.append(rmse_)
                 aa.append(aa_)
                 nmi.append(nmi_)
