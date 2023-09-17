@@ -43,7 +43,7 @@ def load_data(root, reduce=4):
             img = np.asarray(img).reshape((-1, 1))
 
             # collect data and label.
-            images.append(img)
+            images.append(img / 255.0)  # normalize to [0, 1], easier to work with for many algorithms.
             labels.append(i)
 
     # concat all images and labels.
