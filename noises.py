@@ -4,7 +4,7 @@
 import numpy as np
 
 
-def add_gaussian_noise(img, mean=0, sd=0.03):
+def add_gaussian_noise(img, mean=0, sd=0.05):
     """
      In a sense, the standard deviation in gaussian noise can be thought of
      as the degree of noise, and mean as the standard noise.
