@@ -4,22 +4,22 @@
 import numpy as np
 
 
-def add_gaussian_noise(img, mean=0, var=10):
+def add_gaussian_noise(img, mean=0, sd=0.03):
     """
      In a sense, the standard deviation in gaussian noise can be thought of
      as the degree of noise, and mean as the standard noise.
 
     :param img: Original image.
     :param mean: Mean of the gaussian noise.
-    :param var: Standard deviation of the gaussian noise.
+    :param sd: Standard deviation of the gaussian noise.
     :return: Noisy image.
     """
-    noise = np.random.normal(mean, var, img.shape)
+    noise = np.random.normal(mean, sd, img.shape)
 
-    return np.clip(img + noise, 0, 255)
+    return np.clip(img + noise, 0, 1)
 
 
-def add_salt_pepper_noise(img, noise_prob=0.3, salt_prob=0.5):
+def add_salt_pepper_noise(img, noise_prob=0.2, salt_prob=0.5):
     """
     Add salt and pepper noise to the image.
     :param img: Original image.
@@ -37,7 +37,7 @@ def add_salt_pepper_noise(img, noise_prob=0.3, salt_prob=0.5):
     noisy_img = img.copy()
 
     # Apply salt and pepper noise using the masks
-    noisy_img[noise_mask & salt_mask] = 255  # apply salt noise
+    noisy_img[noise_mask & salt_mask] = 1  # apply salt noise
     noisy_img[noise_mask & ~salt_mask] = 0  # apply pepper noise
 
     return noisy_img
