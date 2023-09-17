@@ -35,15 +35,13 @@ class L2NormMURNMF:
 
         return W, H
 
-    def reconstruct(self, W, H):
+    def reconstruct_train(self):
         """
-        Reconstruct the data matrix from the dictionary matrix and transformed data matrix.
+        Reconstruct the trained data matrix from the dictionary matrix and transformed data matrix.
 
-        :param W: Dictionary matrix.
-        :param H: Transformed data matrix.
-        :return: V
+        :return: approximated V
         """
-        return W @ H
+        return self.W @ self.H
 
     def fit(self, V_clean, V, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
         """
@@ -75,8 +73,8 @@ class L2NormMURNMF:
         start = time()
 
         for s in range(steps):
-            Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T) + e
-            Hu = self.H * (self.W.T @ self.V) / (self.W.T @ self.W @ self.H) + e
+            Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T) + e  # Update W first, tho seq might change
+            Hu = self.H * (Wu.T @ self.V) / (Wu.T @ Wu @ self.H) + e  # Update H
 
             d_W = np.sqrt(np.sum((Wu-self.W)**2, axis=(0, 1)))/self.W.size
             d_H = np.sqrt(np.sum((Hu-self.H)**2, axis=(0, 1)))/self.H.size
