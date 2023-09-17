@@ -73,6 +73,7 @@ class L2NormMURNMF:
         start = time()
 
         for s in range(steps):
+            """Please note in the corresponding tutorial, H is updated first, then W."""
             Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T) + e  # Update W first, tho seq might change
             Hu = self.H * (Wu.T @ self.V) / (Wu.T @ Wu @ self.H) + e  # Update H
 
