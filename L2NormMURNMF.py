@@ -98,16 +98,7 @@ class L2NormMURNMF:
                 nmi.append(nmi_)
 
         if plot:
-            plt.figure(figsize=(10, 8))
-            plt.plot(range(len(rmse)), rmse, label='Rooted Mean Squared Error')
-            plt.plot(range(len(aa)), aa, label='Average Accuracy')
-            plt.plot(range(len(nmi)), nmi, label='Normalized Mutual Information')
-            plt.xlabel('Steps')
-            plt.ylabel('Metrics')
-            plt.title('Convergence Curve')
-
-            plt.legend()
-            plt.show()
+            metrics.plot(rmse, aa, nmi, plot_interval)
 
         if verbose:
             print('Training Time taken: {:.2f} seconds.'.format(time()-start))
