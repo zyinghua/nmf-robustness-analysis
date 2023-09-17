@@ -3,6 +3,7 @@
 
 
 import numpy as np
+import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn.cluster import KMeans
 from sklearn.metrics import accuracy_score
@@ -19,7 +20,7 @@ def assign_cluster_label(X, Y):
     Acknowledgement: This function is completely from the assignment 1 instruction ipynb file of COMP4328/5328
     Advanced Machine Learning course at University of Sydney.
     """
-    kmeans = KMeans(n_clusters=len(set(Y))).fit(X)
+    kmeans = KMeans(n_clusters=len(set(Y)), random_state=0).fit(X)
     Y_pred = np.zeros(Y.shape)
     for i in set(kmeans.labels_):
         """for each centroid, label its instances by majority"""
@@ -67,3 +68,33 @@ def evaluate(V_clean, W, H, Y):
     nmi = calc_nmi(Y, Y_pred)
 
     return rmse, aa, nmi
+
+
+def plot(rmse, aa, nmi, plot_interval):
+    plt.figure(figsize=(15, 5))
+
+    # Plot for Rooted Mean Squared Error
+    plt.subplot(1, 3, 1)  # 1 row, 3 columns, first plot
+    plt.plot(np.array(range(len(rmse))) * plot_interval, rmse)
+    plt.xlabel('Steps')
+    plt.ylabel('Rooted Mean Squared Error')
+    plt.title('Rooted Mean Squared Error')
+
+    # Plot for Average Accuracy
+    plt.subplot(1, 3, 2)  # 1 row, 3 columns, second plot
+    plt.plot(np.array(range(len(aa))) * plot_interval, aa)
+    plt.xlabel('Steps')
+    plt.ylabel('Average Accuracy')
+    plt.title('Average Accuracy')
+
+    # Plot for Normalized Mutual Information
+    plt.subplot(1, 3, 3)  # 1 row, 3 columns, third plot
+    plt.plot(np.array(range(len(nmi))) * plot_interval, nmi)
+    plt.xlabel('Steps')
+    plt.ylabel('Normalized Mutual Information')
+    plt.title('Normalized Mutual Information')
+
+    # Show all plots
+    plt.tight_layout()
+    plt.show()
+
