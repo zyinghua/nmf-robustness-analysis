@@ -29,7 +29,7 @@ class L1NormRobustNMF:
 
     def init_factors(self, X):
         """
-        Initialize the dictionary matrix and transformed data matrix *randomly*.
+        Initialize the dictionary matrix and transformed data matrix and the noise matrix *randomly*.
 
         :param X: Original data matrix.
         :return: U, V, E
