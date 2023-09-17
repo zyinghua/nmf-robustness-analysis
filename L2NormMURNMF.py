@@ -43,7 +43,7 @@ class L2NormMURNMF:
         """
         return self.W @ self.H
 
-    def fit(self, V_clean, V, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
+    def fit(self, V_clean, V, Y, steps=1000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=None):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
 
@@ -65,6 +65,9 @@ class L2NormMURNMF:
         assert V is not None, "Please provide the original data matrix from the dataset."
         assert Y is not None, "Please provide the original labels from the dataset."
 
+        if plot_interval is None:
+            plot_interval = steps // 10
+
         self.W, self.H = self.init_factors(V)
         self.V_clean, self.V, self.Y = V_clean, V, Y
 
@@ -74,8 +77,8 @@ class L2NormMURNMF:
 
         for s in range(steps):
             """Please note in the corresponding tutorial, H is updated first, then W."""
-            Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T + e) + e  # Update W
-            Hu = self.H * (Wu.T @ self.V) / (Wu.T @ Wu @ self.H + e) + e  # Update H
+            Hu = self.H * (self.W.T @ self.V) / (self.W.T @ self.W @ self.H + e) + e  # Update H
+            Wu = self.W * (self.V @ Hu.T) / (self.W @ Hu @ Hu.T + e) + e  # Update W
 
             d_W = np.sqrt(np.sum((Wu-self.W)**2, axis=(0, 1)))/self.W.size
             d_H = np.sqrt(np.sum((Hu-self.H)**2, axis=(0, 1)))/self.H.size
