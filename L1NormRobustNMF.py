@@ -51,7 +51,7 @@ class L1NormRobustNMF:
         """
         return self.U @ self.V
 
-    def fit(self, X_clean, X, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
+    def fit_transform(self, X_clean, X, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
         """
         Perform the model learning via the specific MURs stated in the paper.
 

@@ -43,7 +43,7 @@ class L2NormMURNMF:
         """
         return self.W @ self.H
 
-    def fit(self, V_clean, V, Y, steps=1000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=None):
+    def fit_transform(self, V_clean, V, Y, steps=1000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=None):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
 
