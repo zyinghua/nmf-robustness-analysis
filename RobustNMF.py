@@ -8,28 +8,31 @@ from time import time
 
 
 class RobustNMF:
-    def __init__(self, rank, random_state=0):
+    def __init__(self, rank, lambda_, random_state=0):
         """
         Initialization of the Robust Non-negative Matrix Factorization via L1 Norm Regularization NMF model.
         Hyper-parameters are defined here.
 
         :param rank: Rank of the dictionary matrix. Latent dimension.
+        :param lambda_: Regularization parameter.
         :param random_state: Random seed.
         """
         assert rank is not None and rank > 0, "Please provide a valid integer for the rank of the dictionary matrix."
+        assert lambda_ is not None and lambda_ > 0, "Please provide a valid numeric for the regularization parameter."
 
         self.np_rand = np.random.RandomState(random_state)
         self.k = rank
+        self.lambda_ = lambda_
 
         self.X_clean, self.X, self.U, self.V, self.E, self.Y = None, None, None, None, None, None
-        self.m, self.n = None, None
+        self.m, self.n = None, None  # Number of features/pixels, and number of samples (rows and cols)
 
     def init_factors(self, X):
         """
         Initialize the dictionary matrix and transformed data matrix *randomly*.
 
         :param X: Original data matrix.
-        :return: W, H
+        :return: U, V, E
         """
 
         self.U = self.np_rand.rand(X.shape[0], self.k)
@@ -40,15 +43,13 @@ class RobustNMF:
 
         return self.U, self.V, self.E
 
-    def reconstruct(self, U, V):
+    def reconstruct_train(self):
         """
         Reconstruct the clean data matrix from the dictionary matrix and transformed data matrix.
 
-        :param U: Dictionary matrix.
-        :param V: Transformed data matrix.
-        :return: reconstructed data matrix
+        :return: approximated clean data matrix.
         """
-        return U @ V
+        return self.U @ self.V
 
     def fit(self, X_clean, X, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
         """
@@ -63,8 +64,9 @@ class RobustNMF:
         :param verbose: True to print out the convergence information.
         :param plot: True to plot the convergence curve on the three nominated metrics.
         :param plot_interval: Plot the convergence curve on the metrics every plot_interval step.
-        :return: W, H, E
+        :return: U, V, E
         """
+        assert X_clean is not None, "Please provide the original non-contaminated data matrix from the dataset."
         assert X is not None, "Please provide the original data matrix from the dataset."
         assert Y is not None, "Please provide the original labels from the dataset."
 
@@ -76,6 +78,31 @@ class RobustNMF:
         start = time()
 
         for s in range(steps):
+            # Extract/Synthesize update components specified in the paper
+            X_hat = self.X - self.E
+            Uu = self.U * ((X_hat @ self.V.T) / (self.U @ self.V @ self.V.T)) + e
+
+            X_tilde = np.vstack((self.X, np.zeros((1, self.n))))
+
+            I = np.eye(self.m)
+
+            e_m = np.full((1, self.m), np.sqrt(self.lambda_) * np.exp(1))
+            U_tilde = np.vstack((np.hstack((Uu, I, -I)), np.hstack((np.zeros((1, self.k)), e_m, e_m))))
+            S = np.abs(U_tilde.T @ U_tilde)
+
+            Ep = (np.abs(self.E) + self.E) / 2
+            En = (np.abs(self.E) - self.E) / 2
+
+            V_tilde = np.vstack((self.V, np.vstack((Ep, En))))
+
+            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T @ U_tilde @ V_tilde)) / (S @ V_tilde))
+                                 + ((V_tilde * (U_tilde.T @ X_tilde)) / (S @ V_tilde)))
+
+            Vu = V_tilde[:self.k, :]
+            Epu = V_tilde[self.k:self.k+self.m, :]
+            Enu = V_tilde[self.k+self.m:, :]
+
+            Eu = Epu - Enu  # Mathematically, this operation gives you back E
 
             d_U = np.sqrt(np.sum((Uu-self.U)**2, axis=(0, 1)))/self.U.size
             d_V = np.sqrt(np.sum((Vu-self.V)**2, axis=(0, 1)))/self.V.size
@@ -112,4 +139,3 @@ class RobustNMF:
             print('Training Time taken: {:.2f} seconds.'.format(time()-start))
 
         return self.U, self.V, self.E
-
