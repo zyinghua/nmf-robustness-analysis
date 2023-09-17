@@ -8,6 +8,7 @@ from collections import Counter
 from sklearn.cluster import KMeans
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import normalized_mutual_info_score
+from sklearn.metrics import mean_squared_error
 
 
 def assign_cluster_label(X, Y):
@@ -34,7 +35,7 @@ def calc_rmse(V_clean, W, H):
     Calculate the Rooted Mean Squared Error (RMSE) between the original data matrix and the reconstructed data matrix.
     :return: RMSE
     """
-    return np.linalg.norm(V_clean - W @ H, ord='fro')  # Apply Frobenius norm
+    return np.sqrt(mean_squared_error(V_clean, W @ H))
 
 
 def calc_aa(Y, Y_pred):

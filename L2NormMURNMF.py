@@ -43,7 +43,7 @@ class L2NormMURNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, V_clean, V, Y, steps=1000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=None):
+    def fit_transform(self, V_clean, V, Y, steps=1000, e=1e-7, d=1e-7, verbose=False, plot=False, plot_interval=None):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
 
@@ -66,7 +66,7 @@ class L2NormMURNMF:
         assert Y is not None, "Please provide the original labels from the dataset."
 
         if plot_interval is None:
-            plot_interval = steps // 10
+            plot_interval = steps // 20
 
         self.W, self.H = self.init_factors(V)
         self.V_clean, self.V, self.Y = V_clean, V, Y
