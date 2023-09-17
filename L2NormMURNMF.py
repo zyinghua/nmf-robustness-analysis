@@ -74,8 +74,8 @@ class L2NormMURNMF:
 
         for s in range(steps):
             """Please note in the corresponding tutorial, H is updated first, then W."""
-            Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T) + e  # Update W first, tho seq might change
-            Hu = self.H * (Wu.T @ self.V) / (Wu.T @ Wu @ self.H) + e  # Update H
+            Wu = self.W * (self.V @ self.H.T) / (self.W @ self.H @ self.H.T + e) + e  # Update W
+            Hu = self.H * (Wu.T @ self.V) / (Wu.T @ Wu @ self.H + e) + e  # Update H
 
             d_W = np.sqrt(np.sum((Wu-self.W)**2, axis=(0, 1)))/self.W.size
             d_H = np.sqrt(np.sum((Hu-self.H)**2, axis=(0, 1)))/self.H.size
