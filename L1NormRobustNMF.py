@@ -51,7 +51,7 @@ class L1NormRobustNMF:
         """
         return self.U @ self.V
 
-    def fit_transform(self, X_clean, X, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
+    def fit_transform(self, X_clean, X, Y, steps=50, e=1e-7, verbose=False, plot=False, plot_interval=5):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -60,7 +60,6 @@ class L1NormRobustNMF:
         :param Y: Original labels.
         :param steps: Number of iterations.
         :param e: epsilon, added to the updates avoid numerical instability.
-        :param d: delta, threshold for rate of change at each step.
         :param verbose: True to print out the convergence information.
         :param plot: True to plot the convergence curve on the three nominated metrics.
         :param plot_interval: Plot the convergence curve on the metrics every plot_interval step.
@@ -104,15 +103,6 @@ class L1NormRobustNMF:
 
             Eu = Epu - Enu  # Mathematically, this operation gives you back E
 
-            d_U = np.sqrt(np.sum((Uu-self.U)**2, axis=(0, 1)))/self.U.size
-            d_V = np.sqrt(np.sum((Vu-self.V)**2, axis=(0, 1)))/self.V.size
-            d_E = np.sqrt(np.sum((Eu-self.E)**2, axis=(0, 1)))/self.E.size
-
-            if d_U < d and d_V < d and d_E < d:
-                if verbose:
-                    print('Converged at step {}.'.format(s))
-                break
-
             self.U = Uu
             self.V = Vu
             self.E = Eu
@@ -122,6 +112,9 @@ class L1NormRobustNMF:
                 rmse.append(rmse_)
                 aa.append(aa_)
                 nmi.append(nmi_)
+
+                if verbose:
+                    print('Step: {}, RMSE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rmse_, aa_, nmi_))
 
         if plot:
             metrics.plot(rmse, aa, nmi, plot_interval)

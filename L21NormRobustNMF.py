@@ -44,7 +44,7 @@ class L21RobustNMF:
         """
         return self.F @ self.G
 
-    def fit_transform(self, X_clean, X, Y, steps=5000, e=1e-7, d=0.001, verbose=False, plot=False, plot_interval=100):
+    def fit_transform(self, X_clean, X, Y, steps=100, e=1e-7, d=1e-7, verbose=False, plot=False, plot_interval=10):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -93,6 +93,9 @@ class L21RobustNMF:
                 rmse.append(rmse_)
                 aa.append(aa_)
                 nmi.append(nmi_)
+
+                if verbose:
+                    print('Step: {}, RMSE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rmse_, aa_, nmi_))
 
         if plot:
             metrics.plot(rmse, aa, nmi, plot_interval)
