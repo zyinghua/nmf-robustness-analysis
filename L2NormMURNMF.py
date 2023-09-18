@@ -30,10 +30,11 @@ class L2NormMURNMF:
         :return: W, H
         """
 
-        W = self.np_rand.rand(V.shape[0], self.rank)
-        H = self.np_rand.rand(self.rank, V.shape[1])
+        self.W = self.np_rand.rand(V.shape[0], self.rank)
+        self.H = self.np_rand.rand(self.rank, V.shape[1])
 
-        return W, H
+        # self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(V.shape[0], self.rank)))
+        # self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, V.shape[1])))
 
     def reconstruct_train(self):
         """
@@ -65,7 +66,7 @@ class L2NormMURNMF:
         assert V is not None, "Please provide the original data matrix from the dataset."
         assert Y is not None, "Please provide the original labels from the dataset."
 
-        self.W, self.H = self.init_factors(V)
+        self.init_factors(V)
         self.V_clean, self.V, self.Y = V_clean, V, Y
 
         rmse, aa, nmi = [], [], []
