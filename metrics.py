@@ -71,7 +71,7 @@ def evaluate(V_clean, W, H, Y):
     return rmse, aa, nmi
 
 
-def plot(rmse, aa, nmi, plot_interval):
+def plot_metrics(rmse, aa, nmi, plot_interval):
     plt.figure(figsize=(15, 5))
 
     # Plot for Rooted Mean Squared Error

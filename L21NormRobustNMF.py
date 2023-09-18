@@ -98,7 +98,7 @@ class L21RobustNMF:
                     print('Step: {}, RMSE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rmse_, aa_, nmi_))
 
         if plot:
-            metrics.plot(rmse, aa, nmi, plot_interval)
+            metrics.plot_metrics(rmse, aa, nmi, plot_interval)
 
         if verbose:
             print('Training Time taken: {:.2f} seconds.'.format(time()-start))
