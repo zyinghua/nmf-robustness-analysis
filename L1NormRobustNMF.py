@@ -2,7 +2,6 @@
 # Creation Date: 2023/09/14
 
 import numpy as np
-import matplotlib.pyplot as plt
 import metrics
 from time import time
 
@@ -35,11 +34,15 @@ class L1NormRobustNMF:
         :return: U, V, E
         """
 
-        self.U = self.np_rand.rand(X.shape[0], self.k)
-        self.V = self.np_rand.rand(self.k, X.shape[1])
-        self.E = self.np_rand.rand(X.shape[0], X.shape[1])
+        #         self.U = self.np_rand.rand(X.shape[0], self.k) * 1e-5
+        #         self.V = self.np_rand.rand(self.k, X.shape[1]) * 1e-5
+        #         self.E = self.np_rand.rand(X.shape[0], X.shape[1]) * 1e-5
 
         self.m, self.n = X.shape
+
+        self.U = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.k)))
+        self.V = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.k, self.n)))
+        self.E = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.n)))
 
         return self.U, self.V, self.E
 
@@ -51,7 +54,7 @@ class L1NormRobustNMF:
         """
         return self.U @ self.V
 
-    def fit_transform(self, X_clean, X, Y, steps=50, e=1e-7, verbose=False, plot=False, plot_interval=5):
+    def fit_transform(self, X_clean, X, Y, steps=100, verbose=False, plot=False, plot_interval=10):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -79,9 +82,9 @@ class L1NormRobustNMF:
         for s in range(steps):
             # Extract/Synthesize update components specified in the paper
             X_hat = self.X - self.E
-            Uu = self.U * ((X_hat @ self.V.T) / (self.U @ self.V @ self.V.T)) + e
+            Uu = self.U * ((X_hat @ self.V.T) / (self.U @ self.V @ self.V.T))
 
-            X_tilde = np.vstack((self.X, np.zeros((1, self.n))))
+            X_tilde = np.vstack((self.X, np.zeros(1, self.n)))
 
             I = np.eye(self.m)
 
@@ -98,8 +101,8 @@ class L1NormRobustNMF:
                                  + ((V_tilde * (U_tilde.T @ X_tilde)) / (S @ V_tilde)))
 
             Vu = V_tilde[:self.k, :]
-            Epu = V_tilde[self.k:self.k+self.m, :]
-            Enu = V_tilde[self.k+self.m:, :]
+            Epu = V_tilde[self.k:self.k + self.m, :]
+            Enu = V_tilde[self.k + self.m:, :]
 
             Eu = Epu - Enu  # Mathematically, this operation gives you back E
 
@@ -120,6 +123,6 @@ class L1NormRobustNMF:
             metrics.plot_metrics(rmse, aa, nmi, plot_interval)
 
         if verbose:
-            print('Training Time taken: {:.2f} seconds.'.format(time()-start))
+            print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
         return self.U, self.V, self.E
