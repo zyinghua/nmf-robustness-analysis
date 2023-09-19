@@ -7,7 +7,7 @@ from time import time
 
 
 class L1NormRobustNMF:
-    def __init__(self, rank, lambda_, random_state=0):
+    def __init__(self, rank, lambda_=0.04, random_state=0):
         """
         Initialization of the Robust Non-negative Matrix Factorization via L1 Norm Regularization NMF model.
         Hyper-parameters are defined here.
