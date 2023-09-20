@@ -2,7 +2,6 @@
 # Creation Date: 2023/09/17
 
 import numpy as np
-import matplotlib.pyplot as plt
 import metrics
 from time import time
 
@@ -30,9 +29,11 @@ class L21RobustNMF:
         :param X: Original data matrix. (Contaminated)
         :return: F, G
         """
+        self.F = np.abs(np.random.normal(loc=0.0, scale=1, size=(X.shape[0], self.rank)))
+        self.G = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, X.shape[1])))
 
-        self.F = self.np_rand.rand(X.shape[0], self.rank)
-        self.G = self.np_rand.rand(self.rank, X.shape[1])
+        # self.F = self.np_rand.rand(X.shape[0], self.rank)
+        # self.G = self.np_rand.rand(self.rank, X.shape[1])
 
     def reconstruct_train(self):
         """

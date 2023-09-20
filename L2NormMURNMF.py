@@ -2,7 +2,6 @@
 # Creation Date: 2023/09/12
 
 import numpy as np
-import matplotlib.pyplot as plt
 from time import time
 import metrics
 
