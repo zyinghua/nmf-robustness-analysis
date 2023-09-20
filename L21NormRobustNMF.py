@@ -20,20 +20,23 @@ class L21RobustNMF:
         self.np_rand = np.random.RandomState(random_state)
         self.rank = rank
 
-        self.X_clean, self.X, self.F, self.G, self.Y = None, None, None, None, None
+        self.X_clean, self.X, self.W, self.H, self.Y = None, None, None, None, None
 
     def init_factors(self, X):
         """
         Initialize the dictionary matrix and transformed data matrix *randomly*.
 
         :param X: Original data matrix. (Contaminated)
-        :return: F, G
+        :return: W, H
         """
-        self.F = np.abs(np.random.normal(loc=0.0, scale=1, size=(X.shape[0], self.rank)))
-        self.G = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, X.shape[1])))
 
-        # self.F = self.np_rand.rand(X.shape[0], self.rank)
-        # self.G = self.np_rand.rand(self.rank, X.shape[1])
+        self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(X.shape[0], self.rank)))
+        self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, X.shape[1])))
+
+        #         self.W = self.np_rand.rand(X.shape[0], self.rank)
+        #         self.H = self.np_rand.rand(self.rank, X.shape[1])
+
+        return self.W, self.H
 
     def reconstruct_train(self):
         """
@@ -41,9 +44,9 @@ class L21RobustNMF:
 
         :return: approximated clean data matrix.
         """
-        return self.F @ self.G
+        return self.W @ self.H
 
-    def fit_transform(self, X_clean, X, Y, steps=100, e=1e-7, d=1e-7, verbose=False, plot=False, plot_interval=10):
+    def fit_transform(self, X_clean, X, Y, steps=5000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=500):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -56,7 +59,7 @@ class L21RobustNMF:
         :param verbose: True to print out the convergence information.
         :param plot: True to plot the convergence curve on the three nominated metrics.
         :param plot_interval: Plot the convergence curve on the metrics every plot_interval step.
-        :return: F, G
+        :return: W, H
         """
         assert X_clean is not None, "Please provide the original non-contaminated data matrix from the dataset."
         assert X is not None, "Please provide the original data matrix from the dataset."
@@ -70,24 +73,24 @@ class L21RobustNMF:
         start = time()
 
         for s in range(steps):
-            D = np.diag(1 / (np.sqrt(np.sum((self.X - self.F @ self.G) ** 2, axis=0)) + e))
+            D = np.diag(1 / (np.sqrt(np.sum((self.X - self.W @ self.H) ** 2, axis=0)) + e))
 
-            Fu = self.F * ((self.X @ D @ self.G.T) / (self.F @ self.G @ D @ self.G.T + e))
-            Gu = self.G * ((Fu.T @ self.X @ D) / (Fu.T @ Fu @ self.G @ D + e))
+            Wu = self.W * ((self.X @ D @ self.H.T) / (self.W @ self.H @ D @ self.H.T + e))
+            Hu = self.H * ((Wu .T @ self.X @ D) / (Wu .T @ Wu  @ self.H @ D + e))
 
-            d_F = np.sqrt(np.sum((Fu-self.F)**2, axis=(0, 1)))/self.F.size
-            d_G = np.sqrt(np.sum((Gu-self.G)**2, axis=(0, 1)))/self.G.size
+            d_F = np.sqrt(np.sum((Wu - self.W) ** 2, axis=(0, 1))) / self.W.size
+            d_G = np.sqrt(np.sum((Hu - self.H) ** 2, axis=(0, 1))) / self.H.size
 
             if d_F < d and d_G < d:
                 if verbose:
                     print('Converged at step {}.'.format(s))
                 break
 
-            self.F = Fu
-            self.G = Gu
+            self.W = Wu
+            self.H = Hu
 
             if plot and s % plot_interval == 0:
-                rmse_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.F, self.G, self.Y)
+                rmse_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.W, self.H, self.Y)
                 rmse.append(rmse_)
                 aa.append(aa_)
                 nmi.append(nmi_)
@@ -99,6 +102,6 @@ class L21RobustNMF:
             metrics.plot_metrics(rmse, aa, nmi, plot_interval)
 
         if verbose:
-            print('Training Time taken: {:.2f} seconds.'.format(time()-start))
+            print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
-        return self.F, self.G
+        return self.W, self.H

@@ -23,7 +23,7 @@ class L1NormRobustNMF:
         self.k = rank
         self.lambda_ = lambda_
 
-        self.X_clean, self.X, self.U, self.V, self.E, self.Y = None, None, None, None, None, None
+        self.X_clean, self.X, self.W, self.H, self.E, self.Y = None, None, None, None, None, None
         self.m, self.n = None, None  # Number of features/pixels, and number of samples (rows and cols)
 
     def init_factors(self, X):
@@ -31,20 +31,20 @@ class L1NormRobustNMF:
         Initialize the dictionary matrix and transformed data matrix and the noise matrix *randomly*.
 
         :param X: Original data matrix.
-        :return: U, V, E
+        :return: W, H, E
         """
 
-        #         self.U = self.np_rand.rand(X.shape[0], self.k) * 1e-5
-        #         self.V = self.np_rand.rand(self.k, X.shape[1]) * 1e-5
+        #         self.W = self.np_rand.rand(X.shape[0], self.k) * 1e-5
+        #         self.H = self.np_rand.rand(self.k, X.shape[1]) * 1e-5
         #         self.E = self.np_rand.rand(X.shape[0], X.shape[1]) * 1e-5
 
         self.m, self.n = X.shape
 
-        self.U = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.k)))
-        self.V = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.k, self.n)))
+        self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.k)))
+        self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.k, self.n)))
         self.E = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.n)))
 
-        return self.U, self.V, self.E
+        return self.W, self.H, self.E
 
     def reconstruct_train(self):
         """
@@ -52,7 +52,7 @@ class L1NormRobustNMF:
 
         :return: approximated clean data matrix.
         """
-        return self.U @ self.V
+        return self.W @ self.H
 
     def fit_transform(self, X_clean, X, Y, steps=100, verbose=False, plot=False, plot_interval=10):
         """
@@ -82,36 +82,36 @@ class L1NormRobustNMF:
         for s in range(steps):
             # Extract/Synthesize update components specified in the paper
             X_hat = self.X - self.E
-            Uu = self.U * ((X_hat @ self.V.T) / (self.U @ self.V @ self.V.T))
+            Wu = self.W * ((X_hat @ self.H.T) / (self.W @ self.H @ self.H.T))
 
             X_tilde = np.vstack((self.X, np.zeros(1, self.n)))
 
             I = np.eye(self.m)
 
             e_m = np.full((1, self.m), np.sqrt(self.lambda_) * np.exp(1))
-            U_tilde = np.vstack((np.hstack((Uu, I, -I)), np.hstack((np.zeros((1, self.k)), e_m, e_m))))
+            U_tilde = np.vstack((np.hstack((Wu, I, -I)), np.hstack((np.zeros((1, self.k)), e_m, e_m))))
             S = np.abs(U_tilde.T @ U_tilde)
 
             Ep = (np.abs(self.E) + self.E) / 2
             En = (np.abs(self.E) - self.E) / 2
 
-            V_tilde = np.vstack((self.V, np.vstack((Ep, En))))
+            V_tilde = np.vstack((self.H, np.vstack((Ep, En))))
 
             V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T @ U_tilde @ V_tilde)) / (S @ V_tilde))
                                  + ((V_tilde * (U_tilde.T @ X_tilde)) / (S @ V_tilde)))
 
-            Vu = V_tilde[:self.k, :]
+            Hu = V_tilde[:self.k, :]
             Epu = V_tilde[self.k:self.k + self.m, :]
             Enu = V_tilde[self.k + self.m:, :]
 
             Eu = Epu - Enu  # Mathematically, this operation gives you back E
 
-            self.U = Uu
-            self.V = Vu
+            self.W = Wu
+            self.H = Hu
             self.E = Eu
 
             if plot and s % plot_interval == 0:
-                rmse_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.U, self.V, self.Y)
+                rmse_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.W, self.H, self.Y)
                 rmse.append(rmse_)
                 aa.append(aa_)
                 nmi.append(nmi_)
@@ -125,4 +125,4 @@ class L1NormRobustNMF:
         if verbose:
             print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
-        return self.U, self.V, self.E
+        return self.W, self.H, self.E
