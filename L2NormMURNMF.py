@@ -29,11 +29,8 @@ class L2NormMURNMF:
         :return: W, H
         """
 
-        self.W = self.np_rand.rand(V.shape[0], self.rank)
-        self.H = self.np_rand.rand(self.rank, V.shape[1])
-
-        # self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(V.shape[0], self.rank)))
-        # self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, V.shape[1])))
+        self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(V.shape[0], self.rank)))
+        self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, V.shape[1])))
 
     def reconstruct_train(self):
         """
@@ -43,7 +40,7 @@ class L2NormMURNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, V_clean, V, Y, steps=1000, e=1e-7, d=1e-7, verbose=False, plot=False, plot_interval=50):
+    def fit_transform(self, V_clean, V, Y, steps=1000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
 
@@ -68,7 +65,10 @@ class L2NormMURNMF:
         self.init_factors(V)
         self.V_clean, self.V, self.Y = V_clean, V, Y
 
-        rmse, aa, nmi = [], [], []
+        rre, aa, nmi = [], [], []
+
+        if verbose:
+            print("Start training...")
 
         start = time()
 
@@ -77,8 +77,8 @@ class L2NormMURNMF:
             Hu = self.H * (self.W.T @ self.V) / (self.W.T @ self.W @ self.H + e) + e  # Update H
             Wu = self.W * (self.V @ Hu.T) / (self.W @ Hu @ Hu.T + e) + e  # Update W
 
-            d_W = np.sqrt(np.sum((Wu-self.W)**2, axis=(0, 1)))/self.W.size
-            d_H = np.sqrt(np.sum((Hu-self.H)**2, axis=(0, 1)))/self.H.size
+            d_W = np.sqrt(np.sum((Wu - self.W) ** 2, axis=(0, 1))) / self.W.size
+            d_H = np.sqrt(np.sum((Hu - self.H) ** 2, axis=(0, 1))) / self.H.size
 
             if d_W < d and d_H < d:
                 if verbose:
@@ -89,18 +89,18 @@ class L2NormMURNMF:
             self.H = Hu
 
             if plot and s % plot_interval == 0:
-                rmse_, aa_, nmi_ = metrics.evaluate(self.V_clean, self.W, self.H, self.Y)
-                rmse.append(rmse_)
+                rre_, aa_, nmi_ = metrics.evaluate(self.V_clean, self.W, self.H, self.Y)
+                rre.append(rre_)
                 aa.append(aa_)
                 nmi.append(nmi_)
 
                 if verbose:
-                    print('Step: {}, RMSE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rmse_, aa_, nmi_))
+                    print('Step: {}, RRE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rre_, aa_, nmi_))
 
         if plot:
-            metrics.plot_metrics(rmse, aa, nmi, plot_interval)
+            metrics.plot_metrics(rre, aa, nmi, plot_interval)
 
         if verbose:
-            print('Training Time taken: {:.2f} seconds.'.format(time()-start))
+            print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
         return self.W, self.H

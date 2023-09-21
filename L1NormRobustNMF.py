@@ -34,10 +34,6 @@ class L1NormRobustNMF:
         :return: W, H, E
         """
 
-        #         self.W = self.np_rand.rand(X.shape[0], self.k) * 1e-5
-        #         self.H = self.np_rand.rand(self.k, X.shape[1]) * 1e-5
-        #         self.E = self.np_rand.rand(X.shape[0], X.shape[1]) * 1e-5
-
         self.m, self.n = X.shape
 
         self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.k)))
@@ -54,7 +50,7 @@ class L1NormRobustNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, X_clean, X, Y, steps=100, verbose=False, plot=False, plot_interval=10):
+    def fit_transform(self, X_clean, X, Y, steps=1000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -62,7 +58,8 @@ class L1NormRobustNMF:
         :param X: Original contaminated data matrix.
         :param Y: Original labels.
         :param steps: Number of iterations.
-        :param e: epsilon, added to the updates avoid numerical instability.
+        :param e: epsilon, for numerical instability.
+        :param d: delta, param change threshold for stopping.
         :param verbose: True to print out the convergence information.
         :param plot: True to plot the convergence curve on the three nominated metrics.
         :param plot_interval: Plot the convergence curve on the metrics every plot_interval step.
@@ -75,16 +72,19 @@ class L1NormRobustNMF:
         self.init_factors(X)
         self.X_clean, self.X, self.Y = X_clean, X, Y
 
-        rmse, aa, nmi = [], [], []
+        rre, aa, nmi = [], [], []
+
+        if verbose:
+            print("Start training...")
 
         start = time()
 
         for s in range(steps):
             # Extract/Synthesize update components specified in the paper
             X_hat = self.X - self.E
-            Wu = self.W * ((X_hat @ self.H.T) / (self.W @ self.H @ self.H.T))
+            Wu = self.W * ((X_hat @ self.H.T) / (self.W @ self.H @ self.H.T + e))
 
-            X_tilde = np.vstack((self.X, np.zeros(1, self.n)))
+            X_tilde = np.vstack((self.X, np.zeros((1, self.n))))
 
             I = np.eye(self.m)
 
@@ -97,8 +97,8 @@ class L1NormRobustNMF:
 
             V_tilde = np.vstack((self.H, np.vstack((Ep, En))))
 
-            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T @ U_tilde @ V_tilde)) / (S @ V_tilde))
-                                 + ((V_tilde * (U_tilde.T @ X_tilde)) / (S @ V_tilde)))
+            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T @ U_tilde @ V_tilde)) / (S @ V_tilde + e))
+                                 + ((V_tilde * (U_tilde.T @ X_tilde)) / (S @ V_tilde + e)))
 
             Hu = V_tilde[:self.k, :]
             Epu = V_tilde[self.k:self.k + self.m, :]
@@ -106,23 +106,33 @@ class L1NormRobustNMF:
 
             Eu = Epu - Enu  # Mathematically, this operation gives you back E
 
+            d_W = np.sqrt(np.sum((Wu - self.W) ** 2, axis=(0, 1))) / self.W.size
+            d_H = np.sqrt(np.sum((Hu - self.H) ** 2, axis=(0, 1))) / self.H.size
+            d_E = np.sqrt(np.sum((Eu - self.E) ** 2, axis=(0, 1))) / self.E.size
+
+            if d_W < d and d_H < d and d_E < d:
+                if verbose:
+                    print('Converged at step {}.'.format(s))
+                break
+
             self.W = Wu
             self.H = Hu
             self.E = Eu
 
             if plot and s % plot_interval == 0:
-                rmse_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.W, self.H, self.Y)
-                rmse.append(rmse_)
+                rre_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.W, self.H, self.Y)
+                rre.append(rre_)
                 aa.append(aa_)
                 nmi.append(nmi_)
 
                 if verbose:
-                    print('Step: {}, RMSE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rmse_, aa_, nmi_))
+                    print('Step: {}, RRE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rre_, aa_, nmi_))
 
         if plot:
-            metrics.plot_metrics(rmse, aa, nmi, plot_interval)
+            metrics.plot_metrics(rre, aa, nmi, plot_interval)
 
         if verbose:
             print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
         return self.W, self.H, self.E
+

@@ -33,9 +33,6 @@ class L21RobustNMF:
         self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(X.shape[0], self.rank)))
         self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, X.shape[1])))
 
-        #         self.W = self.np_rand.rand(X.shape[0], self.rank)
-        #         self.H = self.np_rand.rand(self.rank, X.shape[1])
-
         return self.W, self.H
 
     def reconstruct_train(self):
@@ -46,7 +43,7 @@ class L21RobustNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, X_clean, X, Y, steps=5000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=500):
+    def fit_transform(self, X_clean, X, Y, steps=1000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -68,7 +65,10 @@ class L21RobustNMF:
         self.init_factors(X)
         self.X_clean, self.X, self.Y = X_clean, X, Y
 
-        rmse, aa, nmi = [], [], []
+        rre, aa, nmi = [], [], []
+
+        if verbose:
+            print("Start training...")
 
         start = time()
 
@@ -76,12 +76,12 @@ class L21RobustNMF:
             D = np.diag(1 / (np.sqrt(np.sum((self.X - self.W @ self.H) ** 2, axis=0)) + e))
 
             Wu = self.W * ((self.X @ D @ self.H.T) / (self.W @ self.H @ D @ self.H.T + e))
-            Hu = self.H * ((Wu .T @ self.X @ D) / (Wu .T @ Wu  @ self.H @ D + e))
+            Hu = self.H * ((Wu.T @ self.X @ D) / (Wu.T @ Wu @ self.H @ D + e))
 
-            d_F = np.sqrt(np.sum((Wu - self.W) ** 2, axis=(0, 1))) / self.W.size
-            d_G = np.sqrt(np.sum((Hu - self.H) ** 2, axis=(0, 1))) / self.H.size
+            d_W = np.sqrt(np.sum((Wu - self.W) ** 2, axis=(0, 1))) / self.W.size
+            d_H = np.sqrt(np.sum((Hu - self.H) ** 2, axis=(0, 1))) / self.H.size
 
-            if d_F < d and d_G < d:
+            if d_W < d and d_H < d:
                 if verbose:
                     print('Converged at step {}.'.format(s))
                 break
@@ -90,16 +90,16 @@ class L21RobustNMF:
             self.H = Hu
 
             if plot and s % plot_interval == 0:
-                rmse_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.W, self.H, self.Y)
-                rmse.append(rmse_)
+                rre_, aa_, nmi_ = metrics.evaluate(self.X_clean, self.W, self.H, self.Y)
+                rre.append(rre_)
                 aa.append(aa_)
                 nmi.append(nmi_)
 
                 if verbose:
-                    print('Step: {}, RMSE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rmse_, aa_, nmi_))
+                    print('Step: {}, RRE: {:.4f}, AA: {:.4f}, NMI: {:.4f}'.format(s, rre_, aa_, nmi_))
 
         if plot:
-            metrics.plot_metrics(rmse, aa, nmi, plot_interval)
+            metrics.plot_metrics(rre, aa, nmi, plot_interval)
 
         if verbose:
             print('Training Time taken: {:.2f} seconds.'.format(time() - start))

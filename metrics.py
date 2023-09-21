@@ -8,7 +8,6 @@ from collections import Counter
 from sklearn.cluster import KMeans
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import normalized_mutual_info_score
-from sklearn.metrics import mean_squared_error
 
 
 def assign_cluster_label(X, Y):
@@ -30,12 +29,12 @@ def assign_cluster_label(X, Y):
     return Y_pred
 
 
-def calc_rmse(V_clean, W, H):
+def calc_rre(V_clean, W, H):
     """
-    Calculate the Rooted Mean Squared Error (RMSE) between the original data matrix and the reconstructed data matrix.
-    :return: RMSE
+    Calculate the Relative Reconstruction Error (RRE) between the original data matrix and the reconstructed data matrix.
+    :return: RRE
     """
-    return np.sqrt(mean_squared_error(V_clean, W @ H))
+    return np.linalg.norm(V_clean - W @ H, ord="fro") / np.linalg.norm(V_clean, ord="fro")
 
 
 def calc_aa(Y, Y_pred):
@@ -51,32 +50,34 @@ def calc_nmi(Y, Y_pred):
 def evaluate(V_clean, W, H, Y):
     """
     Evaluate the performance of the model by calculating the following metrics:
-    1. Rooted Mean Squared Error (RMSE)
+    1. Relative Reconstruction Error (RRE)
     2. Average Accuracy
     3. Normalized Mutual Information (NMI)
 
-    :return: RMSE, AA, NMI
+    :return: RRE, AA, NMI
     """
     assert V_clean is not None, "Please provide the original non-contaminated data matrix from the dataset."
     assert W is not None, "Please provide the dictionary matrix."
     assert H is not None, "Please provide the transformed data matrix."
     assert Y is not None, "Please provide the original labels from the dataset."
 
-    rmse = calc_rmse(V_clean, W, H)
+    rre = calc_rre(V_clean, W, H)
 
     Y_pred = assign_cluster_label(H.T, Y)
+    # Y_pred_ori = assign_cluster_label(V_clean.T, Y)
+
     aa = calc_aa(Y, Y_pred)
     nmi = calc_nmi(Y, Y_pred)
 
-    return rmse, aa, nmi
+    return rre, aa, nmi
 
 
-def plot_metrics(rmse, aa, nmi, plot_interval):
+def plot_metrics(rre, aa, nmi, plot_interval):
     plt.figure(figsize=(15, 5))
 
     # Plot for Rooted Mean Squared Error
     plt.subplot(1, 3, 1)  # 1 row, 3 columns, first plot
-    plt.plot(np.array(range(len(rmse))) * plot_interval, rmse)
+    plt.plot(np.array(range(len(rre))) * plot_interval, rre)
     plt.xlabel('Steps')
     plt.ylabel('Rooted Mean Squared Error')
     plt.title('Rooted Mean Squared Error')
