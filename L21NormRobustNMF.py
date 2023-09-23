@@ -30,8 +30,8 @@ class L21RobustNMF:
         :return: W, H
         """
 
-        self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(X.shape[0], self.rank)))
-        self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, X.shape[1])))
+        self.W = np.abs(np.random.normal(loc=0, scale=1, size=(X.shape[0], self.rank)))
+        self.H = np.abs(np.random.normal(loc=0, scale=1, size=(self.rank, X.shape[1])))
 
         return self.W, self.H
 

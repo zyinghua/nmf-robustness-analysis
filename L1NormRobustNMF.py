@@ -28,7 +28,8 @@ class L1NormRobustNMF:
 
     def init_factors(self, X):
         """
-        Initialize the dictionary matrix and transformed data matrix and the noise matrix *randomly*.
+        Initialize the dictionary matrix and transformed data matrix and
+        the noise matrix *randomly* according to Normal Distribution.
 
         :param X: Original data matrix.
         :return: W, H, E
@@ -36,9 +37,9 @@ class L1NormRobustNMF:
 
         self.m, self.n = X.shape
 
-        self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.k)))
-        self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.k, self.n)))
-        self.E = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.m, self.n)))
+        self.W = np.abs(np.random.normal(loc=0, scale=1, size=(self.m, self.k)))
+        self.H = np.abs(np.random.normal(loc=0, scale=1, size=(self.k, self.n)))
+        self.E = np.abs(np.random.normal(loc=0, scale=1, size=(self.m, self.n)))
 
         return self.W, self.H, self.E
 
@@ -80,25 +81,24 @@ class L1NormRobustNMF:
         start = time()
 
         for s in range(steps):
-            # Extract/Synthesize update components specified in the paper
             X_hat = self.X - self.E
             Wu = self.W * ((X_hat @ self.H.T) / (self.W @ self.H @ self.H.T + e))
-
-            X_tilde = np.vstack((self.X, np.zeros((1, self.n))))
-
-            I = np.eye(self.m)
-
-            e_m = np.full((1, self.m), np.sqrt(self.lambda_) * np.exp(1))
-            U_tilde = np.vstack((np.hstack((Wu, I, -I)), np.hstack((np.zeros((1, self.k)), e_m, e_m))))
-            S = np.abs(U_tilde.T @ U_tilde)
 
             Ep = (np.abs(self.E) + self.E) / 2
             En = (np.abs(self.E) - self.E) / 2
 
             V_tilde = np.vstack((self.H, np.vstack((Ep, En))))
 
-            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T @ U_tilde @ V_tilde)) / (S @ V_tilde + e))
-                                 + ((V_tilde * (U_tilde.T @ X_tilde)) / (S @ V_tilde + e)))
+            X_tilde = np.vstack((self.X, np.zeros(self.n)))
+
+            I = np.eye(self.m)
+
+            e_m = np.full((1, self.m), np.sqrt(self.lambda_) * np.exp(1))
+            U_tilde = np.vstack((np.hstack((Wu, I, -I)), np.hstack((np.zeros((1, self.k)), e_m, e_m))))
+
+            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T @ U_tilde @ V_tilde)) / (
+                        np.abs(U_tilde.T @ U_tilde @ V_tilde) + e))
+                                 + ((V_tilde * (U_tilde.T @ X_tilde)) / (np.abs(U_tilde.T @ U_tilde @ V_tilde) + e)))
 
             Hu = V_tilde[:self.k, :]
             Epu = V_tilde[self.k:self.k + self.m, :]
@@ -135,4 +135,3 @@ class L1NormRobustNMF:
             print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
         return self.W, self.H, self.E
-

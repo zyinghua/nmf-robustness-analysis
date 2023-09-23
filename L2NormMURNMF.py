@@ -29,8 +29,8 @@ class L2NormMURNMF:
         :return: W, H
         """
 
-        self.W = np.abs(np.random.normal(loc=0.0, scale=1, size=(V.shape[0], self.rank)))
-        self.H = np.abs(np.random.normal(loc=0.0, scale=1, size=(self.rank, V.shape[1])))
+        self.W = np.abs(np.random.normal(loc=0, scale=1, size=(V.shape[0], self.rank)))
+        self.H = np.abs(np.random.normal(loc=0, scale=1, size=(self.rank, V.shape[1])))
 
     def reconstruct_train(self):
         """
