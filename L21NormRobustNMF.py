@@ -30,8 +30,12 @@ class L21RobustNMF:
         :return: W, H
         """
 
-        self.W = np.abs(np.random.normal(loc=0, scale=1, size=(X.shape[0], self.rank)))
-        self.H = np.abs(np.random.normal(loc=0, scale=1, size=(self.rank, X.shape[1])))
+        avg = np.sqrt(X.mean() / self.rank)
+        self.H = avg * self.np_rand.standard_normal(size=(self.rank, X.shape[1])).astype(X.dtype, copy=False)
+        self.W = avg * self.np_rand.standard_normal(size=(X.shape[0], self.rank)).astype(X.dtype, copy=False)
+
+        np.abs(self.H, out=self.H)
+        np.abs(self.W, out=self.W)
 
         return self.W, self.H
 
@@ -43,7 +47,7 @@ class L21RobustNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, X_clean, X, Y, steps=1000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
+    def fit_transform(self, X_clean, X, Y, steps=500, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -73,10 +77,10 @@ class L21RobustNMF:
         start = time()
 
         for s in range(steps):
-            D = np.diag(1 / (np.sqrt(np.sum((self.X - self.W @ self.H) ** 2, axis=0)) + e))
+            D = np.diag(1 / (np.sqrt(np.sum((self.X - self.W.dot(self.H)) ** 2, axis=0)) + e))
 
-            Wu = self.W * ((self.X @ D @ self.H.T) / (self.W @ self.H @ D @ self.H.T + e))
-            Hu = self.H * ((Wu.T @ self.X @ D) / (Wu.T @ Wu @ self.H @ D + e))
+            Wu = self.W * ((self.X.dot(D.dot(self.H.T))) / (self.W.dot(self.H.dot(D.dot(self.H.T))) + e))
+            Hu = self.H * ((Wu.T.dot(self.X.dot(D))) / (Wu.T.dot(Wu.dot(self.H.dot(D))) + e))
 
             d_W = np.sqrt(np.sum((Wu - self.W) ** 2, axis=(0, 1))) / self.W.size
             d_H = np.sqrt(np.sum((Hu - self.H) ** 2, axis=(0, 1))) / self.H.size
@@ -105,3 +109,4 @@ class L21RobustNMF:
             print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
         return self.W, self.H
+

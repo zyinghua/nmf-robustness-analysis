@@ -37,9 +37,14 @@ class L1NormRobustNMF:
 
         self.m, self.n = X.shape
 
-        self.W = np.abs(np.random.normal(loc=0, scale=1, size=(self.m, self.k)))
-        self.H = np.abs(np.random.normal(loc=0, scale=1, size=(self.k, self.n)))
-        self.E = np.abs(np.random.normal(loc=0, scale=1, size=(self.m, self.n)))
+        avg = np.sqrt(X.mean() / self.k)
+        self.H = avg * self.np_rand.standard_normal(size=(self.k, self.n)).astype(X.dtype, copy=False)
+        self.W = avg * self.np_rand.standard_normal(size=(self.m, self.k)).astype(X.dtype, copy=False)
+        self.E = avg * self.np_rand.standard_normal(size=(self.m, self.n)).astype(X.dtype, copy=False)
+
+        np.abs(self.H, out=self.H)
+        np.abs(self.W, out=self.W)
+        np.abs(self.E, out=self.E)
 
         return self.W, self.H, self.E
 
@@ -51,7 +56,7 @@ class L1NormRobustNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, X_clean, X, Y, steps=1000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
+    def fit_transform(self, X_clean, X, Y, steps=500, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -82,7 +87,7 @@ class L1NormRobustNMF:
 
         for s in range(steps):
             X_hat = self.X - self.E
-            Wu = self.W * ((X_hat @ self.H.T) / (self.W @ self.H @ self.H.T + e))
+            Wu = self.W * ((X_hat.dot(self.H.T)) / (self.W.dot(self.H.dot(self.H.T)) + e))
 
             Ep = (np.abs(self.E) + self.E) / 2
             En = (np.abs(self.E) - self.E) / 2
@@ -95,10 +100,9 @@ class L1NormRobustNMF:
 
             e_m = np.full((1, self.m), np.sqrt(self.lambda_) * np.exp(1))
             U_tilde = np.vstack((np.hstack((Wu, I, -I)), np.hstack((np.zeros((1, self.k)), e_m, e_m))))
+            S = U_tilde.T.dot(U_tilde)
 
-            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T @ U_tilde @ V_tilde)) / (
-                        np.abs(U_tilde.T @ U_tilde @ V_tilde) + e))
-                                 + ((V_tilde * (U_tilde.T @ X_tilde)) / (np.abs(U_tilde.T @ U_tilde @ V_tilde) + e)))
+            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T.dot(U_tilde.dot(V_tilde)))) / (np.abs(S.dot(V_tilde)) + e)) + ((V_tilde * (U_tilde.T.dot(X_tilde))) / (np.abs(S.dot(V_tilde)) + e)))
 
             Hu = V_tilde[:self.k, :]
             Epu = V_tilde[self.k:self.k + self.m, :]

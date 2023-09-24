@@ -29,8 +29,12 @@ class L2NormMURNMF:
         :return: W, H
         """
 
-        self.W = np.abs(np.random.normal(loc=0, scale=1, size=(V.shape[0], self.rank)))
-        self.H = np.abs(np.random.normal(loc=0, scale=1, size=(self.rank, V.shape[1])))
+        avg = np.sqrt(V.mean() / self.rank)
+        self.H = avg * self.np_rand.standard_normal(size=(self.rank, V.shape[1])).astype(V.dtype, copy=False)
+        self.W = avg * self.np_rand.standard_normal(size=(V.shape[0], self.rank)).astype(V.dtype, copy=False)
+
+        np.abs(self.H, out=self.H)
+        np.abs(self.W, out=self.W)
 
     def reconstruct_train(self):
         """
@@ -40,7 +44,7 @@ class L2NormMURNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, V_clean, V, Y, steps=1000, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
+    def fit_transform(self, V_clean, V, Y, steps=500, e=1e-7, d=1e-10, verbose=False, plot=False, plot_interval=50):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
 
@@ -74,8 +78,8 @@ class L2NormMURNMF:
 
         for s in range(steps):
             """Please note in the corresponding tutorial, H is updated first, then W."""
-            Hu = self.H * (self.W.T @ self.V) / (self.W.T @ self.W @ self.H + e) + e  # Update H
-            Wu = self.W * (self.V @ Hu.T) / (self.W @ Hu @ Hu.T + e) + e  # Update W
+            Hu = self.H * (self.W.T.dot(self.V)) / (self.W.T.dot(self.W.dot(self.H)) + e) + e  # Update H
+            Wu = self.W * (self.V.dot(Hu.T)) / (self.W.dot(Hu.dot(Hu.T)) + e) + e  # Update W
 
             d_W = np.sqrt(np.sum((Wu - self.W) ** 2, axis=(0, 1))) / self.W.size
             d_H = np.sqrt(np.sum((Hu - self.H) ** 2, axis=(0, 1))) / self.H.size
