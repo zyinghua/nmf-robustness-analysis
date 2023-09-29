@@ -1,6 +1,3 @@
-# Author: Yinghua Zhou
-# Creation Date: 2023/09/17
-
 import numpy as np
 import metrics
 from time import time
@@ -47,7 +44,7 @@ class L21RobustNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, X_clean, X, Y, steps=500, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
+    def fit_transform(self, X_clean, X, Y, steps=500, e=1e-7, d=1e-7, verbose=False, plot=False, plot_interval=50):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -109,4 +106,3 @@ class L21RobustNMF:
             print('Training Time taken: {:.2f} seconds.'.format(time() - start))
 
         return self.W, self.H
-

@@ -1,6 +1,3 @@
-# Author: Yinghua Zhou
-# Creation Date: 2023/09/14
-
 import numpy as np
 import metrics
 from time import time
@@ -56,7 +53,7 @@ class L1NormRobustNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, X_clean, X, Y, steps=500, e=1e-7, d=1e-6, verbose=False, plot=False, plot_interval=50):
+    def fit_transform(self, X_clean, X, Y, steps=500, e=1e-7, d=1e-7, verbose=False, plot=False, plot_interval=50):
         """
         Perform the model learning via the specific MURs stated in the paper.
 
@@ -102,7 +99,9 @@ class L1NormRobustNMF:
             U_tilde = np.vstack((np.hstack((Wu, I, -I)), np.hstack((np.zeros((1, self.k)), e_m, e_m))))
             S = U_tilde.T.dot(U_tilde)
 
-            V_tilde = np.maximum(0, V_tilde - ((V_tilde * (U_tilde.T.dot(U_tilde.dot(V_tilde)))) / (np.abs(S.dot(V_tilde)) + e)) + ((V_tilde * (U_tilde.T.dot(X_tilde))) / (np.abs(S.dot(V_tilde)) + e)))
+            V_tilde = np.maximum(0, V_tilde - (
+                        (V_tilde * (U_tilde.T.dot(U_tilde.dot(V_tilde)))) / (np.abs(S.dot(V_tilde)) + e)) + (
+                                             (V_tilde * (U_tilde.T.dot(X_tilde))) / (np.abs(S.dot(V_tilde)) + e)))
 
             Hu = V_tilde[:self.k, :]
             Epu = V_tilde[self.k:self.k + self.m, :]

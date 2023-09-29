@@ -1,6 +1,3 @@
-# Author: Yinghua Zhou
-# Creation Date: 2023/09/12
-
 import numpy as np
 from time import time
 import metrics
@@ -44,7 +41,7 @@ class L2NormMURNMF:
         """
         return self.W @ self.H
 
-    def fit_transform(self, V_clean, V, Y, steps=500, e=1e-7, d=1e-10, verbose=False, plot=False, plot_interval=50):
+    def fit_transform(self, V_clean, V, Y, steps=500, e=1e-7, d=1e-7, verbose=False, plot=False, plot_interval=50):
         """
         Perform *Multiplicative Update Rule* for Non-Negative Matrix Factorization.
 
@@ -77,7 +74,6 @@ class L2NormMURNMF:
         start = time()
 
         for s in range(steps):
-            """Please note in the corresponding tutorial, H is updated first, then W."""
             Hu = self.H * (self.W.T.dot(self.V)) / (self.W.T.dot(self.W.dot(self.H)) + e) + e  # Update H
             Wu = self.W * (self.V.dot(Hu.T)) / (self.W.dot(Hu.dot(Hu.T)) + e) + e  # Update W
 
